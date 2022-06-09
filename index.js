@@ -1,40 +1,35 @@
 require('dotenv').config()
 
-const { Client, Intents } = require('discord.js')
+const { Client, Intents, Collection, MessageEmbed } = require('discord.js')
 const axios = require('axios')
-const User = require('./User.class')
-
+// const User = require('./User.class')
 const client = new Client({ intents: [Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILDS] })
+const fs = require('fs');
 
-const users = []
+const prefix = '!'
+
+client.commands = new Collection()
+const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith('.js'));
+for (const file of commandFiles) {
+    const command = require(`./commands/${file}`)
+
+    client.commands.set(command.name, command);
+}
+
 
 client.on('ready', () => {
     console.log('client is listening as ' + client.user.tag)
 })
 
 client.on('message', msg => {
-    if (msg.content == "hi") {
-        msg.reply(`hello <@${msg.author.id}>`)
-    }
 
-    if (msg.content == "add") {
-        var flag = false;
+    if (!msg.content.startsWith(prefix) || msg.author.bot) return;
 
-        for (var i = 0; i < users.length; i++) {
-            if (users[i].id == msg.author.id) {
-                flag = true;
-                break;
-            }
-        }
-
-        if (!flag) {
-            const new_user = new User(msg.author.id)
-            users.push(new_user)
-        }
-    }
-
-    if (msg.content == 'count') {
-        console.log(users)
+    const args = msg.content.slice(prefix.length).split(/ +/);
+    const command = args.shift().toLowerCase();
+    
+    if (command === 'ls') {
+        return client.commands.get('command').execute(msg, args, MessageEmbed, axios)
     }
 })
 
